@@ -1,4 +1,5 @@
-// import React from 'react';
+// eslint-disable-next-line no-unused-vars
+import React from 'react';
 import PropTypes from 'prop-types';
 
 const def = "font-semibold rounded shadow-md ";
@@ -19,7 +20,7 @@ function Button({ children, onClick, red, white, className }) {
 }
 
 Button.propTypes = {
-  children: PropTypes.node.isRequired,
+  children: PropTypes.node,
   onClick: PropTypes.func,
   red: PropTypes.bool,
   white: PropTypes.bool,

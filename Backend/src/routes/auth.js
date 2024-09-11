@@ -1,6 +1,7 @@
 require("dotenv").config({ path: "../../../.env" });
 const express = require("express");
 const router = express.Router();
+const webpush = require("web-push");
 const mongoose = require("mongoose");
 const User = mongoose.model("User");
 const Product = mongoose.model("Product");
@@ -114,25 +115,7 @@ router.delete("/logout", (req, res) => {
   }
 });
 
-// Admin & user
 router.get("/dashboard/:userId", async (req, res) => {
-  try {
-    const userId = req.params.userId;
-    const user = await User.findById(userId);
-    const users = await User.find();
-    
-    if (!user) {
-      return res.status(404).json({ error: "User not found" });
-    }
-    const products = await Product.find({ user: userId });
-    res.json({users, user, products});
-  } catch (error) {
-    console.error("Error retrieving users:", error);
-    res.status(500).json({ error: "Internal Server Error" });
-  }
-});
-
-router.get("/user/:userId", async (req, res) => {
   try {
     const userId = req.params.userId;
     const user = await User.findById(userId);
@@ -147,7 +130,7 @@ router.get("/user/:userId", async (req, res) => {
   }
 });
 
-router.put("/user/:userId", async (req, res) => {
+router.put("user/:userId", async (req, res) => {
   try {
     const userId = req.params.userId;
     const user = await User.findById(userId);
@@ -173,11 +156,105 @@ router.put("/user/:userId", async (req, res) => {
   }
 });
 
-router.delete("/user/:userId", async (req, res) => {
+// Admin
+router.get("/dashboard/admin/users", async (req, res) => {
+  try {
+    const users = await User.find();
+
+    if (!users) {
+      return res.status(404).json({ error: "Users not found" });
+    }
+    res.json({ users });
+  } catch (error) {
+    console.error("Error retrieving users:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+router.get("/dashboard/admin/users/:userId", async (req, res) => {
   try {
     const userId = req.params.userId;
     const user = await User.findById(userId);
-    
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    res.json({ user });
+  } catch (error) {
+    console.error("Error retrieving user:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+router.put("/dashboard/admin/users/edit/:userId", async (req, res) => {
+  try {
+    const userId = req.params.userId;
+    const user = await User.findById(userId);
+    const { name, email } = req.body;
+    console.log(req.body);
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    if (name !== undefined) {
+      user.name = name;
+    }
+
+    if (email !== undefined) {
+      user.email = email;
+    }
+    console.log(name + " " + email + " " + userId);
+    const updatedUser = await user.save();
+    res.json({ message: "User information updated", user: updatedUser });
+  } catch (error) {
+    console.error("Error retrieving users:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+router.get("/dashboard/admin/products", async (req, res) => {
+  try {
+    const products = await Product.find();
+
+    if (!products) {
+      return res.status(404).json({ error: "Products not found" });
+    }
+    res.json({ products });
+  } catch (error) {
+    console.error("Error retrieving products", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+router.get("/dashboard/admin/:userId/my_products", async (req, res) => {
+  try {
+    const userId = req.params.userId;
+    const user = await User.findById(userId);
+
+    if (!user || !user.admin) {
+      return res
+        .status(403)
+        .json({ error: "Access denied. User is not an admin." });
+    }
+
+    const products = await Product.find({ user: userId });
+
+    if (products.length === 0) {
+      return res.status(404).json({ error: "Admin products not found" });
+    }
+
+    res.json({ products });
+  } catch (error) {
+    console.error("Error retrieving admin products:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+router.delete("/users/:userId", async (req, res) => {
+  try {
+    const userId = req.params.userId;
+    const user = await User.findById(userId);
+
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
@@ -189,36 +266,19 @@ router.delete("/user/:userId", async (req, res) => {
   }
 });
 
-// Product
-// router.get("/dashboard/:userId", async (req, res) => {
-//   try {
-//     const userId = req.params.userId;
-//     const user = await User.findById(userId);
-
-//     if (!user) {
-//       return res.status(404).json({ error: "User not found" });
-//     }
-//     const products = await Product.find({ user: userId });
-//     res.json(products);
-//     console.log(products);
-//   } catch (error) {
-//     console.error("Error retrieving user:", error);
-//     res.status(500).json({ error: "Internal Server Error" });
-//   }
-// });
-
+// Products
 router.post("/:userId/add-product", async (req, res) => {
   try {
     const { title, desc, exp_date, img, tags } = req.body;
     const userId = req.params.userId;
-
     const findUserId = await User.findById(userId);
+
     if (!findUserId) {
       return res.status(404).json({ error: "User not found" });
     }
 
     if (!title) {
-      return res.status(422).json({ error: "Add all data, please" });
+      return res.status(422).json({ error: "Add a title, please" });
     }
 
     const product = new Product({
@@ -236,6 +296,119 @@ router.post("/:userId/add-product", async (req, res) => {
     console.error(err);
     res.status(500).json({ error: "Failed to save the product" });
   }
+});
+
+router.put("/dashboard/products/edit/:productId", async (req, res) => {
+  try {
+    const productId = req.params.productId;
+    const product = await Product.findById(productId);
+    const { title, desc, exp_date } = req.body;
+    console.log(req.body);
+
+    if (!product) {
+      return res.status(404).json({ error: "Product not found" });
+    }
+    if (title !== undefined) {
+      product.title = title;
+    }
+
+    if (desc !== undefined) {
+      product.desc = desc;
+    }
+
+    if (exp_date !== undefined) {
+      product.exp_date = exp_date;
+    }
+    console.log(title + " " + desc + " " + exp_date + " " + productId);
+    const updatedproduct = await product.save();
+    res.json({
+      message: "Product information updated",
+      product: updatedproduct,
+    });
+  } catch (error) {
+    console.error("Error retrieving Product:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+router.get("/dashboard/:userId/my_products", async (req, res) => {
+  try {
+    const userId = req.params.userId;
+    const products = await Product.find({ user: userId });
+
+    if (!products) {
+      return res.status(404).json({ error: "User products not found" });
+    }
+
+    res.json({ products });
+  } catch (error) {
+    console.error("Error retrieving user products:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+router.get("/dashboard/products/:productId", async (req, res) => {
+  try {
+    const productId = req.params.productId;
+    const product = await Product.findById(productId);
+
+    if (!product) {
+      return res.status(404).json({ error: "Product not found" });
+    }
+
+    res.json({ product });
+  } catch (error) {
+    console.error("Error retrieving product:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+router.delete("/dashboard/products/:productId", async (req, res) => {
+  try {
+    const productId = req.params.productId;
+    const product = await Product.findById(productId);
+
+    if (!product) {
+      return res.status(404).json({ error: "Product not found" });
+    }
+    await Product.findByIdAndDelete(productId);
+    res.json({ message: "Product deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting product:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+// Notifications
+const vapidKeys = webpush.generateVAPIDKeys();
+
+webpush.setVapidDetails(
+  "mailto:you@example.com",
+  vapidKeys.publicKey,
+  vapidKeys.privateKey
+);
+
+router.post("/subscribe", (req, res) => {
+  const subscription = req.body;
+  global.subscription = subscription;
+  res.status(201).json({});
+});
+
+const sendNotification = (subscription, data) => {
+  webpush
+    .sendNotification(subscription, data)
+    .then((response) => console.log("Push Notification Sent:", response))
+    .catch((error) => console.error("Push Notification Error:", error));
+};
+
+router.post("/trigger-push", (req, res) => {
+  const payload = JSON.stringify({
+    title: "Product Expiring Soon",
+    body: "One of your products is about to expire!",
+  });
+
+  sendNotification(global.subscription, payload);
+  res.status(200).json({ message: "Notification sent" });
 });
 
 module.exports = router;

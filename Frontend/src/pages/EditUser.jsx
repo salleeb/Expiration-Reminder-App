@@ -1,113 +1,129 @@
-import PropTypes from "prop-types";
+// eslint-disable-next-line no-unused-vars
+import React from 'react';
 import axios from "axios";
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import Button from "../components/Button";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { Icon } from '@iconify/react';
+import trashBin from '@iconify-icons/akar-icons/trash-bin';
 
 const url = import.meta.env.VITE_APP_URL;
 
-function EditUser({ selectedUserId, currentUserId, setSelectedUserId }) {
+function EditUser() {
+  const navigate = useNavigate();
   const [user, setUser] = useState(null);
-  const [isDataChanged, setIsDataChanged] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState("");
+  const [message, setMessage] = useState("");
+  const { userId } = useParams();
   const [formData, setFormData] = useState({
     name: "",
     email: "",
   });
 
   useEffect(() => {
-    // console.log(selectedUserId);
-    const getOneUser = async () => {
-      if (!selectedUserId) {
-        return;
-      }
-      try {
-        const response = await axios.get(`${url}user/${selectedUserId}`);
-        const userData = response.data.user;
-        setUser(userData);
-        // console.log(user);
-        setFormData({
-          name: userData.name || "",
-          email: userData.email || "",
-        });
-      } catch (error) {
-        console.error("Error fetching user data:", error);
-      }
-    };
-
-    getOneUser();
-  }, [selectedUserId]);
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      const currentUser = JSON.parse(storedUser);
+      setCurrentUserId(currentUser.userId);
+      console.log(currentUser.userId);
+    }
+  }, []);
 
   useEffect(() => {
-    const isChanged = Object.entries(formData).some(
-      ([key, value]) => user && user[key] !== value
-    );
-    setIsDataChanged(isChanged);
-  }, [formData, user]);
+    getUser();
+  }, []);
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+  const getUser = async () => {
+    try {
+      const res = await fetch(`${url}dashboard/admin/users/${userId}`);
+      if (!res.ok) {
+        throw new Error("Failed to fetch user");
+      }
+      const data = await res.json();
+      setUser(data.user);
+      setFormData({
+        name: data.user.name || "",
+        email: data.user.email || "",
+      });
+    } catch (error) {
+      console.error("Read one user failed", error);
+      setMessage("Failed to load user data.");
+    }
   };
 
   const handleEdit = async (e) => {
     e.preventDefault();
 
+    const isConfirmed = window.confirm("Are you sure you want to save these changes?");
+
+    if (!isConfirmed) {
+      return;
+    }
+
     try {
-      await axios.put(`${url}user/${selectedUserId}`, formData);
-      console.log(formData);
-      if (!formData.email && !formData.name) {
-        document.querySelector("#button").disabled = true;
-      }
-      console.log("Changes saved successfully!");
+      await axios.put(`${url}dashboard/admin/users/edit/${userId}`, formData);
+      console.log("Form data submitted:", formData);
+      setMessage("Changes saved successfully!");
+      navigate(`/dashboard/admin/users/${userId}`);
     } catch (error) {
-      console.error("Register changes error:", error);
+      console.error("Failed to save changes:", error);
+      setMessage("Failed to save changes.");
     }
   };
 
-  const deleteOneUser = async (userId) => {
+  const handleDeleteUser = async () => {
+    const isConfirmed = window.confirm("Are you sure you want to delete this user permanently? The user cannot be restored.");
+
+    if (!isConfirmed) {
+      return;
+    }
+
     try {
-      await axios.delete(`${url}user/${userId}`);
-      console.log("User deleted successfully");
-      setSelectedUserId("");
+      const res = await axios.delete(`${url}users/${userId}`);
+      console.log(res.data.message);
+      setMessage("User deleted successfully");
+      navigate(`/dashboard/${currentUserId}/users`);
     } catch (error) {
-      console.error("Error deleting user:", error);
+      console.error("Error deleting user:", error.response?.data?.error || error.message);
     }
   };
 
   return (
-    <>
-      <div>
-        <h2>Edit user</h2>
-        <form onSubmit={handleEdit}>
-          <input
-            type="text"
-            name="name"
-            placeholder={user?.name || ""}
-            value={formData.name}
-            onChange={handleInputChange}
-          />
-          <input
-            type="email"
-            name="email"
-            placeholder={user?.email || ""}
-            value={formData.email}
-            onChange={handleInputChange}
-          />
-          <button type="submit" id="button" disabled={!isDataChanged}>
-            Save
+    <div>
+      <h1>Edit User</h1>
+      {message && <p>{message}</p>}
+      {user ? (
+        <>
+          <form onSubmit={handleEdit}>
+            <label>
+              Name:
+              <input
+                type="text"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              />
+            </label>
+            <label>
+              Email:
+              <input
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              />
+            </label>
+            <button type="submit">Save Changes</button>
+          </form>
+          <button onClick={handleDeleteUser}>
+            <Icon icon={trashBin} width="24" height="24" />
           </button>
-        </form>
-      </div>
-      <Button onClick={() => deleteOneUser(user._id)}>&#128465;</Button>
-      <Link to={`dashboard/${currentUserId}`}>Back to dashboard</Link>
-    </>
+        </>
+      ) : (
+        <p>There is no user data...</p>
+      )}
+      <Link className="return-arrow" to={`/dashboard/${currentUserId}/users`}>&lt;</Link>
+      <br />
+      <Link to={`/dashboard/${currentUserId}`}>Back to dashboard</Link>
+    </div>
   );
 }
 
 export default EditUser;
-
-EditUser.propTypes = {
-  selectedUserId: PropTypes.string.isRequired,
-  setSelectedUserId: PropTypes.string.isRequired,
-  currentUserId: PropTypes.string.isRequired,
-};

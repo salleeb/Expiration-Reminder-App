@@ -1,20 +1,19 @@
-import { useState, useEffect } from "react";
+// eslint-disable-next-line no-unused-vars
+import React from 'react';
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
-import Dashboard from "./Dashboard";
+import {useNavigate} from 'react-router-dom'
 
 const url = import.meta.env.VITE_APP_URL;
 
 function Login() {
+  const navigate = useNavigate()
+
   const [formData, setFormData] = useState({
     email: "",
     password: "",
   });
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [currentUserId, serCurrentUserId] = useState("");
-  const [currentUser, setCurrentUser] = useState([]);
-  const [admin, setAdmin] = useState(false);
-  const [data, setData] = useState([])
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -30,19 +29,18 @@ function Login() {
       if (res.data.token) {
         localStorage.setItem("token", res.data.token);
         console.log("Token stored in local storage:", res.data.token);
-        const userId = res.data.userId;
-        serCurrentUserId(userId);
-        setData(res.data);
       } else {
         console.error("Token not received from the server");
       }
       console.log("Logged in:", res.data);
-      setCurrentUser(res.data);
-      setIsLoggedIn(true);
+      const user = res.data;
+      localStorage.setItem("user", JSON.stringify(user));
+      console.log("User stored in local storage:", user);
+      const userId = res.data.userId;
+      navigate(`/dashboard/${userId}`);
     } catch (error) {
       console.error("Login error:", error);
     }
-
     // Token expires after 24h
     const twentyFourHoursInMilliseconds = 24 * 60 * 60 * 1000;
 
@@ -51,26 +49,8 @@ function Login() {
     }, twentyFourHoursInMilliseconds);
   };
 
-  useEffect(() => {
-    setAdmin(data.admin)
-    console.log(admin);
-
-  }, [data.admin, admin]);
-
-  console.log(currentUserId);
-  console.log(currentUser);
-
   return (
     <>
-      {isLoggedIn ? (
-        <>
-          <Dashboard
-            currentUser={currentUser}
-            currentUserId={currentUserId}
-            admin={admin}
-          ></Dashboard>
-        </>
-      ) : (
         <>
           <div>
             <h2>Login</h2>
@@ -96,7 +76,7 @@ function Login() {
             Don`t have an account? <Link to={"/register"}>Register!</Link>
           </p>
         </>
-      )}
+      {/* )} */}
     </>
   );
 }

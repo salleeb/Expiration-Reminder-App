@@ -1,22 +1,65 @@
-// import React from 'react';
+// eslint-disable-next-line no-unused-vars
+import React from 'react';
 // import PropTypes from "prop-types";
-import { Link } from "react-router-dom";
+import axios from "axios";
+import { Link, useNavigate } from "react-router-dom";
+import Button from "../components/Button";
+import SearchBar from "../components/SearchBar";
+import '../app.css';
 
-// const def = "font-semibold rounded shadow-md ";
+const url = import.meta.env.VITE_APP_URL;
 
 function Navbar() {
-  //   let style = red
-  //     ? def + "border-2 border-red-700 bg-white hover-bg-red-700 text-black hover-text-white "
-  //     : white
-  //     ? def + "border-2 border-teal-700 hover-border-none bg-white hover-bg-teal-800 hover-text-white "
-  //     : def + "bg-teal-700 text-white hover-bg-teal-800 ";
-  //   style += className ? className : "w-72 h-11";
+  const navigate = useNavigate();
+  const storedUser = localStorage.getItem("user");
+  const user = JSON.parse(storedUser);
+
+  const handleLogout = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await axios.delete(`${url}logout`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      // localStorage.removeItem("token");
+      // localStorage.removeItem("user");
+      localStorage.clear()
+      navigate("/");
+      console.log("Logout successful:", res.data);
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
+  };
+
+  console.log(user);
 
   return (
     <>
-      <nav>
-        <Link to={"/login"}>Log in</Link><br />
-        <Link to={"/register"}>Register</Link>
+    <SearchBar />
+      <nav className="flex">
+        {user ? (
+          <>
+          <Button onClick={handleLogout}>Log out</Button>
+          </>
+        ) : (
+          <>
+            <Button>
+              <Link to={"/login"}>Log in</Link>
+            </Button>
+            <Button>
+              <Link to={"/register"}>Register</Link>
+            </Button>
+          </>
+        )}
+
+        {/* <Button>
+          <Link to={"/login"}>Log in</Link>
+        </Button>
+        <Button>
+          <Link to={"/register"}>Register</Link>
+        </Button>
+        <Button onClick={handleLogout}>Log out</Button> */}
       </nav>
     </>
   );
