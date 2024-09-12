@@ -1,9 +1,8 @@
 // eslint-disable-next-line no-unused-vars
 import React from 'react';
+import { readOneProduct } from "../functions/api";
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-
-const url = import.meta.env.VITE_APP_URL;
 
 function ProductDetails() {
   const [product, setProduct] = useState(null);
@@ -15,23 +14,20 @@ function ProductDetails() {
 
   console.log(admin);
 
-  const fetchProduct = async () => {
+  useEffect(() => {
+    genReadOneProduct();
+  }, [productId]);
+
+
+  const genReadOneProduct = async () => {
     try {
-      const res = await fetch(`${url}dashboard/products/${productId}`);
-      if (!res.ok) {
-        throw new Error("Failed to fetch product");
-      }
-      const data = await res.json();
-      setProduct(data.product);
-      console.log(data.product);
+      const res = await readOneProduct(productId);
+      console.log("Fetched Product:", res);
+      setProduct(res);
     } catch (error) {
-      console.error("Read selected product failed", error);
+      console.error("Failed to fetch one product", error);
     }
   };
-
-  useEffect(() => {
-    fetchProduct();
-  }, [productId]);
 
   return (
     <>

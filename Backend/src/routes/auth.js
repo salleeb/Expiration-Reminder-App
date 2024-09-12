@@ -130,7 +130,7 @@ router.get("/dashboard/:userId", async (req, res) => {
   }
 });
 
-router.put("user/:userId", async (req, res) => {
+router.patch("user/:userId", async (req, res) => {
   try {
     const userId = req.params.userId;
     const user = await User.findById(userId);
@@ -186,7 +186,7 @@ router.get("/dashboard/admin/users/:userId", async (req, res) => {
   }
 });
 
-router.put("/dashboard/admin/users/edit/:userId", async (req, res) => {
+router.patch("/dashboard/admin/users/edit/:userId", async (req, res) => {
   try {
     const userId = req.params.userId;
     const user = await User.findById(userId);
@@ -298,7 +298,7 @@ router.post("/:userId/add-product", async (req, res) => {
   }
 });
 
-router.put("/dashboard/products/edit/:productId", async (req, res) => {
+router.patch("/dashboard/products/edit/:productId", async (req, res) => {
   try {
     const productId = req.params.productId;
     const product = await Product.findById(productId);

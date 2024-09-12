@@ -1,11 +1,10 @@
 // eslint-disable-next-line no-unused-vars
 import React from "react";
+import { readUserProducts, adminReadUserProducts } from "../functions/api";
 import { useEffect, useState, useRef } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Store } from "react-notifications-component";
 import "react-notifications-component/dist/theme.css";
-
-const url = import.meta.env.VITE_APP_URL;
 
 function Product() {
   const [products, setProducts] = useState(null);
@@ -15,101 +14,23 @@ function Product() {
   const admin = user.admin;
   const notifiedProducts = useRef(new Set());
 
-  // const fetchProduct = async () => {
-  //   try {
-  //     const res = await fetch(
-  //       admin
-  //         ? `${url}dashboard/admin/${userId}/my_products`
-  //         : `${url}dashboard/${userId}/my_products`
-  //     );
-  //     if (!res.ok) {
-  //       throw new Error(
-  //         admin ? "Failed to fetch admin products" : "Failed to fetch user products"
-  //       );
-  //     }
-  //     const data = await res.json();
-  //     setProducts(data.products);
-  //     checkProductExpiryAndNotify(data.products);
-  //     console.log(data.products);
-  //   } catch (error) {
-  //     console.error(
-  //       admin ? "Read all admin products failed" : "Read all user products failed",
-  //       error
-  //     );
-  //   }
-  // };
-
   useEffect(() => {
-    fetchProduct();
+    genReadUserProducts();
   }, []);
 
-  // const fetchProduct = async () => {
-  //   try {
-  //     const res = await fetch(
-  //       admin
-  //         ? `${url}dashboard/admin/${userId}/my_products`
-  //         : `${url}dashboard/${userId}/my_products`
-  //     );
-  //     if (!res.ok) {
-  //       throw new Error(
-  //         admin ? "Failed to fetch admin products" : "Failed to fetch user products"
-  //       );
-  //     }
-  //     const data = await res.json();
-  //     setProducts(data.products);
-
-  //     data.products.forEach((product) => {
-  //       if (!notifiedProducts.current.has(product._id)) {
-  //         const expirationDate = new Date(product.exp_date);
-  //         const currentDate = new Date();
-  //         const timeDifference = expirationDate - currentDate;
-  //         const daysDifference = Math.floor(timeDifference / (1000 * 60 * 60 * 24));
-
-  //         if (daysDifference <= 7 && daysDifference >= 0) {
-  //           Store.addNotification({
-  //             title: "Product Expiring Soon",
-  //             message: `${product.title} will expire on ${expirationDate.toLocaleDateString()}`,
-  //             type: "warning",
-  //             insert: "top",
-  //             container: "top-right",
-  //             animationIn: ["animate__animated", "animate__fadeIn"],
-  //             animationOut: ["animate__animated", "animate__fadeOut"],
-  //             dismiss: {
-  //               duration: 5000,
-  //               onScreen: true,
-  //             },
-  //           });
-
-  //           notifiedProducts.current.add(product._id);
-  //         }
-  //       }
-  //     });
-  //   } catch (error) {
-  //     console.error(
-  //       admin ? "Read all admin products failed" : "Read all user products failed",
-  //       error
-  //     );
-  //   }
-  // };
-
-  const fetchProduct = async () => {
+  const genReadUserProducts = async () => {
     try {
-      const res = await fetch(
-        admin
-          ? `${url}dashboard/admin/${userId}/my_products`
-          : `${url}dashboard/${userId}/my_products`
-      );
-      if (!res.ok) {
-        throw new Error(
-          admin ? "Failed to fetch admin products" : "Failed to fetch user products"
-        );
-      }
-      const data = await res.json();
-      setProducts(data.products);
-      checkProductExpiryAndNotify(data.products);
+      const res = await (admin
+        ? adminReadUserProducts(userId)
+        : readUserProducts(userId));
+
+      setProducts(res);
+      checkProductExpiryAndNotify(res);
     } catch (error) {
       console.error(
-        admin ? "Read all admin products failed" : "Read all user products failed",
+        admin
+          ? "Read all admin products failed"
+          : "Read all user products failed",
         error
       );
     }
@@ -122,17 +43,21 @@ function Product() {
     }
 
     if (permission === "granted") {
-      products.forEach(product => {
+      products.forEach((product) => {
         if (!notifiedProducts.current.has(product._id)) {
           const expirationDate = new Date(product.exp_date);
           const currentDate = new Date();
           const timeDifference = expirationDate - currentDate;
-          const daysDifference = Math.floor(timeDifference / (1000 * 60 * 60 * 24));
+          const daysDifference = Math.floor(
+            timeDifference / (1000 * 60 * 60 * 24)
+          );
 
           if (daysDifference <= 7 && daysDifference >= 0) {
             Store.addNotification({
               title: "Product Expiring Soon",
-              message: `${product.title} will expire on ${expirationDate.toLocaleDateString()}`,
+              message: `${
+                product.title
+              } will expire on ${expirationDate.toLocaleDateString()}`,
               type: "warning",
               insert: "top",
               container: "top-right",
@@ -144,12 +69,14 @@ function Product() {
               },
             });
 
-            if ('serviceWorker' in navigator && navigator.serviceWorker.ready) {
+            if ("serviceWorker" in navigator && navigator.serviceWorker.ready) {
               navigator.serviceWorker.ready.then(function (registration) {
-                registration.showNotification('Product Expiring Soon', {
-                  body: `${product.title} will expire on ${expirationDate.toLocaleDateString()}`,
-                  icon: '/path/to/icon.png',
-                  badge: '/path/to/badge.png',
+                registration.showNotification("Product Expiring Soon", {
+                  body: `${
+                    product.title
+                  } will expire on ${expirationDate.toLocaleDateString()}`,
+                  icon: "/path/to/icon.png",
+                  badge: "/path/to/badge.png",
                 });
               });
             }
@@ -158,7 +85,7 @@ function Product() {
         }
       });
     } else {
-      console.warn('Notification permission denied');
+      console.warn("Notification permission denied");
     }
   };
 

@@ -1,37 +1,27 @@
 // eslint-disable-next-line no-unused-vars
-import React from 'react';
+import React from "react";
+import { readOneUser } from "../functions/api";
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-
-const url = import.meta.env.VITE_APP_URL;
 
 function UserDetails() {
   const [selectedUser, setSelectedUser] = useState(null);
   const { userId } = useParams();
-//   const storedUser = localStorage.getItem("user");
-//   const user = JSON.parse(storedUser);
-//   const userId = user.userId;
-//   const admin = user.admin;
-
-//   console.log(admin);
-
-  const fetchUser = async () => {
-    try {
-      const res = await fetch(`${url}dashboard/admin/users/${userId}`);
-      if (!res.ok) {
-        throw new Error("Failed to fetch user");
-      }
-      const data = await res.json();
-      setSelectedUser(data.user);
-      console.log(data.user);
-    } catch (error) {
-      console.error("Read selected user failed", error);
-    }
-  };
 
   useEffect(() => {
-    fetchUser();
+    genReadOneUser();
   }, [userId]);
+
+  const genReadOneUser = async () => {
+    try {
+      const res = await readOneUser(userId);
+      console.log("Fetched User:", res);
+      setSelectedUser(res);
+      console.log(res);
+    } catch (error) {
+      console.error("Failed to fetch one user", error);
+    }
+  };
 
   return (
     <>
@@ -41,13 +31,13 @@ function UserDetails() {
           <p>Loading...</p>
         ) : (
           <>
-          <h3>{selectedUser.name}</h3>
-          <ul>
-            <li key={selectedUser._id}>
+            <h3>{selectedUser.name}</h3>
+            <ul>
+              <li key={selectedUser._id}>
                 {selectedUser.name} - {selectedUser.email}
                 <Link to={`/dashboard/admin/users/edit/${userId}`}>Edit</Link>
-            </li>
-          </ul>
+              </li>
+            </ul>
           </>
         )}
       </div>

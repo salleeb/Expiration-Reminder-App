@@ -1,12 +1,14 @@
 // eslint-disable-next-line no-unused-vars
-import React from 'react';
-import axios from "axios";
-import { useEffect, useState } from 'react';
+import React from "react";
+import {
+  readOneProduct,
+  updateOneProduct,
+  deleteOneProduct,
+} from "../functions/api";
+import { useEffect, useState } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
-import { Icon } from '@iconify/react';
-import trashBin from '@iconify-icons/akar-icons/trash-bin';
-
-const url = import.meta.env.VITE_APP_URL;
+import { Icon } from "@iconify/react";
+import trashBin from "@iconify-icons/akar-icons/trash-bin";
 
 function EditProduct() {
   const navigate = useNavigate();
@@ -23,29 +25,25 @@ function EditProduct() {
   });
 
   useEffect(() => {
-    fetchProduct();
+    genReadOneProduct();
   }, []);
 
-  const fetchProduct = async () => {
+  const genReadOneProduct = async () => {
     try {
-      const res = await fetch(`${url}dashboard/products/${productId}`);
-      if (!res.ok) {
-        throw new Error("Failed to fetch product");
-      }
-      const data = await res.json();
-      setProduct(data.product);
+      const res = await readOneProduct(productId);
+      console.log("Fetched Product:", res);
+      setProduct(res);
       setFormData({
-        title: data.product.title || "",
-        desc: data.product.desc || "",
-        exp_date: data.product.exp_date || "",
+        title: res.title || "",
+        desc: res.desc || "",
+        exp_date: res.exp_date || "",
       });
     } catch (error) {
-      console.error("Read one product failed", error);
-      setMessage("Failed to load product data.");
+      console.error("Failed to fetch one product", error);
     }
   };
 
-  const handleEdit = async (e) => {
+  const handleUpdateOneProduct = async (e) => {
     e.preventDefault();
 
     const isConfirmed = window.confirm("Are you sure you want to save these changes?");
@@ -55,18 +53,20 @@ function EditProduct() {
     }
 
     try {
-      await axios.put(`${url}dashboard/products/edit/${productId}`, formData);
+      await updateOneProduct(productId, formData);
       console.log("Form data submitted:", formData);
       setMessage("Changes saved successfully!");
       navigate(`/dashboard/products/${productId}`);
     } catch (error) {
-      console.error("Failed to save changes:", error);
+      console.error("Failed to fetch one products", error);
       setMessage("Failed to save changes.");
     }
   };
 
   const handleDeleteProduct = async () => {
-    const isConfirmed = window.confirm("Are you sure you want to delete this product permanently?");
+    const isConfirmed = window.confirm(
+      "Are you sure you want to delete this product permanently?"
+    );
 
     if (!isConfirmed) {
       return;
@@ -74,11 +74,7 @@ function EditProduct() {
 
     try {
       const product = localStorage.getItem("product");
-      const res = await axios.delete(`${url}dashboard/products/${productId}`, {
-        headers: {
-          Authorization: `Bearer ${product}`,
-        },
-      });
+      const res = await deleteOneProduct(productId, product);
       localStorage.removeItem("product");
       navigate(`/dashboard/${userId}/products`);
       setMessage("Product deleted successfully");
@@ -94,13 +90,15 @@ function EditProduct() {
       {message && <p>{message}</p>}
       {product ? (
         <>
-          <form onSubmit={handleEdit}>
+          <form onSubmit={handleUpdateOneProduct}>
             <label>
               Title:
               <input
                 type="text"
                 value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, title: e.target.value })
+                }
               />
             </label>
             <label>
@@ -108,7 +106,9 @@ function EditProduct() {
               <input
                 type="text"
                 value={formData.desc}
-                onChange={(e) => setFormData({ ...formData, desc: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, desc: e.target.value })
+                }
               />
             </label>
             <label>
@@ -116,7 +116,9 @@ function EditProduct() {
               <input
                 type="date"
                 value={formData.exp_date}
-                onChange={(e) => setFormData({ ...formData, exp_date: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, exp_date: e.target.value })
+                }
               />
             </label>
             <button type="submit">Save Changes</button>

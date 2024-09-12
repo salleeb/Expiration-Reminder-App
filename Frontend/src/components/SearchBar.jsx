@@ -2,8 +2,11 @@
 import React from "react";
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-
-const url = import.meta.env.VITE_APP_URL;
+import {
+  readAllProducts,
+  readAllUsers,
+  readUserProducts,
+} from "../functions/api";
 
 function SearchBar() {
   const navigate = useNavigate();
@@ -35,16 +38,16 @@ function SearchBar() {
 
   useEffect(() => {
     if (currentUserIsAdmin) {
-      fetchAllProducts();
-      fetchAllUsers();
+      genReadAllProducts();
+      genReadAllUsers();
     } else {
-      fetchUserProducts();
+      genReadAllUserProducts();
     }
   }, [currentUserIsAdmin]);
 
   useEffect(() => {
     const getDataAfterTimeout = setTimeout(() => {
-      const fetchProductSuggestion = () => {
+      const getProductSuggestion = () => {
         const keyword = product.toLowerCase();
         const filtered = allProducts.filter((entry) => {
           return (
@@ -62,13 +65,13 @@ function SearchBar() {
         setProductSuggestion(filtered);
       };
       if (!clicked && product.length > 2) {
-        fetchProductSuggestion();
+        getProductSuggestion();
       } else {
         setProductSuggestion([]);
         setClicked(false);
       }
 
-      const fetchUserSuggestion = () => {
+      const getUserSuggestion = () => {
         const keyword = user.toLowerCase();
         const filtered = allUsers.filter((entry) => {
           return (
@@ -84,13 +87,13 @@ function SearchBar() {
         console.log(userSuggestion);
       };
       if (!clicked && user.length > 2) {
-        fetchUserSuggestion();
+        getUserSuggestion();
       } else {
         setUserSuggestion([]);
         setClicked(false);
       }
 
-      const fetchUserProductSuggestion = () => {
+      const getUserProductSuggestion = () => {
         const keyword = userProduct.toLowerCase();
         const filtered = allUserProducts.filter((entry) => {
           return (
@@ -109,7 +112,7 @@ function SearchBar() {
         console.log(userSuggestion);
       };
       if (!clicked && userProduct.length > 2) {
-        fetchUserProductSuggestion();
+        getUserProductSuggestion();
       } else {
         setUserProductSuggestion([]);
         setClicked(false);
@@ -125,45 +128,49 @@ function SearchBar() {
     setUserProduct("");
   }, [location.pathname]);
 
-  const fetchAllProducts = async () => {
+  const genReadAllProducts = async () => {
     try {
-      const res = await fetch(`${url}dashboard/admin/products`);
-      if (!res.ok) {
-        throw new Error("Failed to fetch all products");
-      }
-      const data = await res.json();
-      setAllProducts(data.products || []);
+      const res = await readAllProducts();
+      console.log("All Products:", res);
+      setAllProducts(res || []);
     } catch (error) {
-      console.error("Read all products failed", error);
+      console.error("Failed to get all products", error);
     }
   };
 
-  const fetchAllUsers = async () => {
+  const genReadAllUsers = async () => {
     try {
-      const res = await fetch(`${url}dashboard/admin/users`);
-      if (!res.ok) {
-        throw new Error("Failed to fetch all users");
-      }
-      const data = await res.json();
-      setAllUsers(data.users || []);
-      console.log(allUsers);
+      const res = await readAllUsers();
+      console.log("All Users:", res);
+      setAllUsers(res || []);
     } catch (error) {
-      console.error("Read all users failed", error);
+      console.error("Failed to get all users", error);
     }
   };
 
-  const fetchUserProducts = async () => {
+  const genReadAllUserProducts = async () => {
     try {
-      const res = await fetch(`${url}dashboard/${currentUserId}/my_products`);
-      if (!res.ok) {
-        throw new Error("Failed to fetch all products");
-      }
-      const data = await res.json();
-      setAllUserProducts(data.products || []);
+      const res = await readUserProducts(currentUserId);
+      console.log("All User Products:", res);
+      setAllUserProducts(res || []);
     } catch (error) {
-      console.error("Read all products failed", error);
+      console.error("Failed to get user products", error);
     }
   };
+
+  // const handleClickFilter = async (filter) => {
+  // 	setData([]);
+  // 	const res = await getProducts();
+  // 	const filteredUser = res.filter((user: { _id: unknown; }) => user._id !== storeUser);
+  // 	const products = filteredUser.map((res: { foods: unknown; }) => res.foods);
+  // 	const filteredItems = products.flat().filter((item: { tags: string | string[]; }) => item.tags && item.tags.includes(filter));
+  // 	setFilteredProducts(filteredItems);
+
+  // 	setActiveFilterProducts(true);
+  // 	if (activeFilterProducts) {
+  // 		setFilteredProducts(filteredItems);
+  // 	}
+  // };
 
   const handleClick = (clicked) => {
     setProduct("");
@@ -183,10 +190,52 @@ function SearchBar() {
     }
   };
 
+  // const [visible, setVisible] = useState(false);
+
   return (
     <>
       {storedUser && (
         <div>
+          {/* {filtered && (
+            <button
+              type="button"
+              className="px-3 py-1"
+              onClick={() => {
+                setVisible(!visible);
+                if (reset) {
+                  reset("resetFilter");
+                }
+              }}
+            >
+              <BsFilter size={25}></BsFilter>
+            </button>
+          )} */}
+
+          <li>
+            <input
+              type="button"
+              className=""
+              // onClick={handleClickFilter("mat")}
+              value="mat"
+            />
+          </li>
+          <li>
+            <input
+              type="button"
+              className=""
+              // onClick={handleClickFilter("medicin")}
+              value="medicin"
+            />
+          </li>
+          <li>
+            <input
+              type="button"
+              className=""
+              // onClick={handleClickFilter("hudvård")}
+              value="hudvård"
+            />
+          </li>
+
           {currentUserIsAdmin ? (
             <>
               <input

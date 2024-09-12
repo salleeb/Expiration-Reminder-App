@@ -1,12 +1,11 @@
 // eslint-disable-next-line no-unused-vars
-import React from 'react';
-import axios from "axios";
+import React from "react";
+import { createOneProduct } from "../functions/api";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 
-const url = import.meta.env.VITE_APP_URL;
-
 function AddProduct() {
+  // const navigate = useNavigate()
   const storedUser = localStorage.getItem("user");
   const user = JSON.parse(storedUser);
   const userId = user.userId;
@@ -24,7 +23,7 @@ function AddProduct() {
     setFormData({ ...formData, [name]: value });
   };
 
-  const handleRegisterProduct = async (e) => {
+  const handleCreateOneProduct = async (e) => {
     e.preventDefault();
 
     if (!formData.title) {
@@ -33,8 +32,16 @@ function AddProduct() {
     }
 
     try {
-      await axios.post(`${url}${userId}/add-product`, formData);
-      console.log(formData);
+      const res = await createOneProduct(userId, formData);
+
+      localStorage.setItem("product", res.product);
+      console.log("Product stored in local storage:", res.product);
+
+      const product = res
+      localStorage.setItem("product", JSON.stringify(product));
+      console.log("Product stored in local storage:", product._id);
+
+      console.log("Form data submitted:", res);
       setMessage("Product created successfully");
       console.log(message);
     } catch (error) {
@@ -42,11 +49,30 @@ function AddProduct() {
     }
   };
 
+  // const handleCreateOneProduct = async (e) => {
+  //   e.preventDefault();
+
+  //   if (!formData.title) {
+  //     console.error("Please add a title");
+  //     return;
+  //   }
+
+  //   try {
+  //       await createOneProduct(userId, formData);
+
+  //     console.log("Form data submitted:");
+  //     setMessage("Product created successfully");
+  //     console.log(message);
+  //   } catch (error) {
+  //     console.error("Register product error:", error);
+  //   }
+  // };
+
   return (
     <>
       <h2>Add a product</h2>
       {message && <p>{message}</p>}
-      <form onSubmit={handleRegisterProduct}>
+      <form onSubmit={handleCreateOneProduct}>
         <input
           type="text"
           name="title"

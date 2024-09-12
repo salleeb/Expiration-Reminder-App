@@ -2,9 +2,7 @@
 import React from 'react';
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-// import Button from "../components/Button";
-
-const url = import.meta.env.VITE_APP_URL;
+import { readAllProducts } from "../functions/api";
 
 function AllProducts() {
   const [allProducts, setAllProducts] = useState(null);
@@ -13,21 +11,16 @@ function AllProducts() {
   const userId = user.userId;
 
   useEffect(() => {
-    fetchAllProducts();
+    genReadAllProducts();
   }, []);
 
-  const fetchAllProducts = async () => {
+  const genReadAllProducts = async () => {
     try {
-      const res = await fetch(`${url}dashboard/admin/products`);
-      if (!res.ok) {
-        throw new Error("Failed to fetch all products");
-      }
-      const data = await res.json();
-      setAllProducts(data.products);
-      console.log(data.products);
-      console.log(allProducts);
+      const res = await readAllProducts();
+      console.log("Fetched Products:", res);
+      setAllProducts(res || []);
     } catch (error) {
-      console.error("Read all products failed", error);
+      console.error("Failed to fetch all products", error);
     }
   };
 
