@@ -1,4 +1,4 @@
-require('dotenv').config({ path: '../data/.env'})
+require('dotenv').config()
 
 module.exports={
     MONGOURL: process.env.DATABASE_URL
