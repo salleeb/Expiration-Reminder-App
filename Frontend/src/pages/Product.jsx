@@ -104,7 +104,8 @@ function Product() {
                 <li key={product._id}>
                   <Link to={`/dashboard/products/${product._id}`}>
                     {product.title} - {product.desc} - Expiration Date:{" "}
-                    {new Date(product.exp_date).toLocaleDateString()}
+                    {new Date(product.exp_date).toLocaleDateString()} - Category: {product.category}
+                    - Tags: {product.tags}
                   </Link>
                 </li>
               </ul>

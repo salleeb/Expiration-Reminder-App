@@ -269,7 +269,7 @@ router.delete("/users/:userId", async (req, res) => {
 // Products
 router.post("/:userId/add-product", async (req, res) => {
   try {
-    const { title, desc, exp_date, img, tags } = req.body;
+    const { title, desc, exp_date, img, tags, category } = req.body;
     const userId = req.params.userId;
     const findUserId = await User.findById(userId);
 
@@ -288,6 +288,7 @@ router.post("/:userId/add-product", async (req, res) => {
       exp_date,
       img,
       tags,
+      category,
     });
 
     await product.save();
@@ -302,12 +303,12 @@ router.patch("/dashboard/products/edit/:productId", async (req, res) => {
   try {
     const productId = req.params.productId;
     const product = await Product.findById(productId);
-    const { title, desc, exp_date } = req.body;
-    console.log(req.body);
+    const { title, desc, exp_date, tags, category } = req.body;
 
     if (!product) {
       return res.status(404).json({ error: "Product not found" });
     }
+
     if (title !== undefined) {
       product.title = title;
     }
@@ -319,14 +320,22 @@ router.patch("/dashboard/products/edit/:productId", async (req, res) => {
     if (exp_date !== undefined) {
       product.exp_date = exp_date;
     }
-    console.log(title + " " + desc + " " + exp_date + " " + productId);
-    const updatedproduct = await product.save();
+
+    if (tags !== undefined && Array.isArray(tags)) {
+      product.tags = tags;
+    }
+
+    if (category !== undefined) {
+      product.category = category;
+    }
+
+    const updatedProduct = await product.save();
     res.json({
       message: "Product information updated",
-      product: updatedproduct,
+      product: updatedProduct,
     });
   } catch (error) {
-    console.error("Error retrieving Product:", error);
+    console.error("Error updating product:", error);
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
@@ -378,6 +387,27 @@ router.delete("/dashboard/products/:productId", async (req, res) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
+
+// router.get("/api/tags", async (req, res) => {
+//   const tags = {
+//     food: ["fruit", "vegetable", "meat"],
+//     medicine: ["antibiotic", "painkiller"],
+//     skinCare: ["moisturizer", "sunscreen"]
+//   };
+//   res.json({ tags });
+// });
+
+// router.post("/api/tags", async (req, res) => {
+//   const { category, newTag } = req.body;
+  
+//   try {
+//     tags[category].push(newTag);
+
+//     res.status(201).json({ success: true, tags });
+//   } catch (error) {
+//     res.status(500).json({ error: "Failed to add tag" });
+//   }
+// });
 
 // Notifications
 const vapidKeys = webpush.generateVAPIDKeys();

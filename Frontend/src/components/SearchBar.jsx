@@ -2,6 +2,8 @@
 import React from "react";
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useCategories } from "../contexts/useCategories";
+import { useTags } from "../contexts/useTags";
 import {
   readAllProducts,
   readAllUsers,
@@ -21,6 +23,10 @@ function SearchBar() {
   const [userSuggestion, setUserSuggestion] = useState([]);
   const [userProductSuggestion, setUserProductSuggestion] = useState([]);
   const [clicked, setClicked] = useState(false);
+  const { categories } = useCategories() || { categories: [] };
+  const { tags } = useTags() || { tags: [] };
+  const [selectedCategory, setSelectedCategory] = useState("");
+  const [selectedTags, setSelectedTags] = useState([]);
   const [currentUserIsAdmin, setCurrentUserIsAdmin] = useState(false);
   const [currentUserId, setCurrentUserId] = useState("");
   const storedUser = localStorage.getItem("user");
@@ -59,7 +65,13 @@ function SearchBar() {
               entry.desc.toLowerCase().includes(keyword)) ||
             (entry.exp_date &&
               typeof entry.exp_date === "string" &&
-              entry.exp_date.toLowerCase().includes(keyword))
+              entry.exp_date.toLowerCase().includes(keyword)) ||
+            (entry.category &&
+              typeof entry.category === "string" &&
+              entry.category.toLowerCase().includes(keyword)) ||
+            (entry.tags &&
+              Array.isArray(entry.tags) &&
+              entry.tags.some((tag) => tag.toLowerCase().includes(keyword)))
           );
         });
         setProductSuggestion(filtered);
@@ -105,7 +117,13 @@ function SearchBar() {
               entry.desc.toLowerCase().includes(keyword)) ||
             (entry.exp_date &&
               typeof entry.exp_date === "string" &&
-              entry.exp_date.toLowerCase().includes(keyword))
+              entry.exp_date.toLowerCase().includes(keyword)) ||
+            (entry.category &&
+              typeof entry.category === "string" &&
+              entry.category.toLowerCase().includes(keyword)) ||
+            (entry.tags &&
+              Array.isArray(entry.tags) &&
+              entry.tags.some((tag) => tag.toLowerCase().includes(keyword)))
           );
         });
         setUserProductSuggestion(filtered);
@@ -158,20 +176,6 @@ function SearchBar() {
     }
   };
 
-  // const handleClickFilter = async (filter) => {
-  // 	setData([]);
-  // 	const res = await getProducts();
-  // 	const filteredUser = res.filter((user: { _id: unknown; }) => user._id !== storeUser);
-  // 	const products = filteredUser.map((res: { foods: unknown; }) => res.foods);
-  // 	const filteredItems = products.flat().filter((item: { tags: string | string[]; }) => item.tags && item.tags.includes(filter));
-  // 	setFilteredProducts(filteredItems);
-
-  // 	setActiveFilterProducts(true);
-  // 	if (activeFilterProducts) {
-  // 		setFilteredProducts(filteredItems);
-  // 	}
-  // };
-
   const handleClick = (clicked) => {
     setProduct("");
     setUser("");
@@ -190,54 +194,77 @@ function SearchBar() {
     }
   };
 
-  // const [visible, setVisible] = useState(false);
+  const handleCategoryChange = (category) => {
+    setSelectedCategory(category);
+    console.log(selectedCategory);
+  };
+
+  const handleTagChange = (tag) => {
+    const updatedTags = selectedTags.includes(tag)
+      ? selectedTags.filter((t) => t !== tag)
+      : [...selectedTags, tag];
+    setSelectedTags(updatedTags);
+    console.log(selectedTags);
+    
+  };
+
+  const filterProducts = () => {
+    const keyword = product.toLowerCase();
+  
+    console.log("Selected Category:", selectedCategory);
+    console.log("Selected Tags:", selectedTags);
+  
+    const filtered = allProducts.filter((entry) => {
+      const matchesCategory = selectedCategory ? entry.category === selectedCategory : true;
+      const matchesTags = selectedTags.length ? selectedTags.every((tag) => entry.tags.includes(tag)) : true;
+      const matchesKeyword =
+        (entry.title && typeof entry.title === "string" && entry.title.toLowerCase().includes(keyword)) ||
+        (entry.desc && typeof entry.desc === "string" && entry.desc.toLowerCase().includes(keyword)) ||
+        (entry.exp_date && typeof entry.exp_date === "string" && entry.exp_date.toLowerCase().includes(keyword));
+  
+      return matchesCategory && matchesTags && matchesKeyword;
+    });
+  
+    setProductSuggestion(filtered);
+    console.log(filtered);
+    navigate(`/dashboard/${currentUserId}`, { state: { filteredProducts: filtered } });
+  
+    setSelectedCategory(null);
+    setSelectedTags([]);
+    setProductSuggestion([]);
+    setUserProductSuggestion([]);
+    setUserSuggestion([]);
+    setClicked(false);
+  };
 
   return (
     <>
       {storedUser && (
         <div>
-          {/* {filtered && (
-            <button
-              type="button"
-              className="px-3 py-1"
-              onClick={() => {
-                setVisible(!visible);
-                if (reset) {
-                  reset("resetFilter");
-                }
-              }}
-            >
-              <BsFilter size={25}></BsFilter>
-            </button>
-          )} */}
-
-          <li>
-            <input
-              type="button"
-              className=""
-              // onClick={handleClickFilter("mat")}
-              value="mat"
-            />
-          </li>
-          <li>
-            <input
-              type="button"
-              className=""
-              // onClick={handleClickFilter("medicin")}
-              value="medicin"
-            />
-          </li>
-          <li>
-            <input
-              type="button"
-              className=""
-              // onClick={handleClickFilter("hudvård")}
-              value="hudvård"
-            />
-          </li>
-
           {currentUserIsAdmin ? (
             <>
+              <ul>
+                {categories &&
+                  categories.map((category, index) => (
+                    <li key={index}>
+                      <button onClick={() => handleCategoryChange(category)}>
+                        {category}
+                      </button>
+                    </li>
+                  ))}
+              </ul>
+
+              <ul>
+                {tags &&
+                  tags.map((tag, index) => (
+                    <li key={index}>
+                      <button onClick={() => handleTagChange(tag)}>
+                        {tag}
+                      </button>
+                    </li>
+                  ))}
+              </ul>
+
               <input
                 type="text"
                 placeholder="Search..."
@@ -249,6 +276,7 @@ function SearchBar() {
                 }}
               />
               {productSuggestion.length > 0 || userSuggestion.length > 0 ? (
+                <>
                 <div className="suggestion">
                   <ul>
                     {productSuggestion.length > 0 &&
@@ -262,6 +290,8 @@ function SearchBar() {
                           {new Date(
                             currentProduct.exp_date
                           ).toLocaleDateString()}
+                          - Category: {currentProduct.category}- Tags:{" "}
+                          {currentProduct.tags}
                         </li>
                       ))}
                     {userSuggestion.length > 0 &&
@@ -275,13 +305,17 @@ function SearchBar() {
                       ))}
                   </ul>
                 </div>
+                </>
               ) : (
                 productSuggestion.length === 0 &&
                 userSuggestion.length === 0 &&
-                (product.length > 2 || user.length > 2) && (
+                (product.length > 2 || user.length > 2) && filterProducts === 0 && (
                   <div className="no-results">Not found...</div>
                 )
               )}
+              <div>
+                  <button onClick={filterProducts}>Search</button>
+                </div>
             </>
           ) : (
             <>
@@ -304,6 +338,8 @@ function SearchBar() {
                         {new Date(
                           currentUserProduct.exp_date
                         ).toLocaleDateString()}
+                        - Category: {currentUserProduct.category}- Tags:{" "}
+                        {currentUserProduct.tags}
                       </li>
                     ))}
                   </ul>
@@ -314,6 +350,9 @@ function SearchBar() {
                   <div className="no-results">Not found...</div>
                 )
               )}
+              <div>
+                  <button onClick={filterProducts}>Search</button>
+                </div>
             </>
           )}
         </div>

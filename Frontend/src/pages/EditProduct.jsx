@@ -1,5 +1,7 @@
 // eslint-disable-next-line no-unused-vars
 import React from "react";
+import { useCategories } from "../contexts/useCategories";
+import { useTags } from "../contexts/useTags";
 import {
   readOneProduct,
   updateOneProduct,
@@ -14,6 +16,12 @@ function EditProduct() {
   const navigate = useNavigate();
   const [product, setProduct] = useState(null);
   const [message, setMessage] = useState("");
+  const { categories, addCategory, deleteCategory } = useCategories() || {
+    categories: [],
+  };
+  const [newCategory, setNewCategory] = useState("");
+  const { tags, addTag, deleteTag } = useTags() || { tags: [] };
+  const [newTag, setNewTag] = useState("");
   const storedUser = localStorage.getItem("user");
   const user = JSON.parse(storedUser);
   const userId = user.userId;
@@ -22,6 +30,8 @@ function EditProduct() {
     title: "",
     desc: "",
     exp_date: "",
+    category: "",
+    tags: [],
   });
 
   useEffect(() => {
@@ -37,6 +47,8 @@ function EditProduct() {
         title: res.title || "",
         desc: res.desc || "",
         exp_date: res.exp_date || "",
+        category: res.category || "",
+        tags: res.tags || [],
       });
     } catch (error) {
       console.error("Failed to fetch one product", error);
@@ -46,19 +58,21 @@ function EditProduct() {
   const handleUpdateOneProduct = async (e) => {
     e.preventDefault();
 
-    const isConfirmed = window.confirm("Are you sure you want to save these changes?");
-
+    const isConfirmed = window.confirm(
+      "Are you sure you want to save these changes?"
+    );
     if (!isConfirmed) {
       return;
     }
 
     try {
+      console.log("Form data before submit:", formData);
       await updateOneProduct(productId, formData);
       console.log("Form data submitted:", formData);
       setMessage("Changes saved successfully!");
       navigate(`/dashboard/products/${productId}`);
     } catch (error) {
-      console.error("Failed to fetch one products", error);
+      console.error("Failed to update product", error);
       setMessage("Failed to save changes.");
     }
   };
@@ -84,12 +98,155 @@ function EditProduct() {
     }
   };
 
+  const handleInputChange = (event) => {
+    const { name, value, type, checked } = event.target;
+    setFormData((prevData) => {
+      if (type === "checkbox") {
+        if (checked) {
+          return { ...prevData, tags: [...prevData.tags, value] };
+        } else {
+          return {
+            ...prevData,
+            tags: prevData.tags.filter((tag) => tag !== value),
+          };
+        }
+      } else {
+        return { ...prevData, [name]: value };
+      }
+    });
+  };
+
+  const handleNewCategoryChange = (e) => {
+    setNewCategory(e.target.value);
+  };
+
+  const handleAddCategory = () => {
+    if (newCategory && !categories.includes(newCategory)) {
+      addCategory(newCategory);
+      setFormData({
+        ...formData,
+        category: newCategory,
+      });
+      setNewCategory("");
+    }
+  };
+
+  const handleNewTagChange = (event) => {
+    setNewTag(event.target.value);
+  };
+
+  const handleAddTag = () => {
+    if (newTag && !tags.includes(newTag)) {
+      addTag(newTag);
+      setFormData({
+        ...formData,
+        tags: [...formData.tags.filter((tag) => tag !== "add-new-tag"), newTag],
+      });
+      setNewTag("");
+    }
+  };
+
   return (
     <div>
       <h1>Edit Product</h1>
       {message && <p>{message}</p>}
       {product ? (
         <>
+          <ul>
+            <li>
+              <button
+                onClick={() =>
+                  handleInputChange({
+                    target: { name: "category", value: "add-new-cat" },
+                  })
+                }
+              >
+                +
+              </button>
+            </li>
+            <li>
+              <button
+                onClick={() =>
+                  handleInputChange({ target: { name: "category", value: "" } })
+                }
+              >
+                Category
+              </button>
+            </li>
+            {categories.map((category, index) => (
+              <li key={index}>
+                <button
+                  onClick={() =>
+                    handleInputChange({
+                      target: { name: "category", value: category },
+                    })
+                  }
+                >
+                  {category}
+                </button>
+                <button onClick={() => deleteCategory(category)}>
+                  <Icon icon={trashBin} width="24" height="24" />
+                </button>
+              </li>
+            ))}
+          </ul>
+
+          {formData.category === "add-new-cat" && (
+            <div>
+              <input
+                type="text"
+                value={newCategory}
+                onChange={handleNewCategoryChange}
+                placeholder="Enter new Category"
+              />
+              <button type="button" onClick={handleAddCategory}>
+                Add
+              </button>
+            </div>
+          )}
+
+          <div>
+            {tags.map((tag, index) => (
+              <label key={index}>
+                <input
+                  type="checkbox"
+                  name="tags"
+                  value={tag}
+                  checked={formData.tags.includes(tag)}
+                  onChange={handleInputChange}
+                />
+                {tag}
+                <button onClick={() => deleteTag(tag)}>
+                  <Icon icon={trashBin} width="24" height="24" />
+                </button>
+              </label>
+            ))}
+            <label>
+              <input
+                type="checkbox"
+                name="tags"
+                value="add-new-tag"
+                checked={formData.tags.includes("add-new-tag")}
+                onChange={handleInputChange}
+              />
+              +
+            </label>
+
+            {formData.tags.includes("add-new-tag") && (
+              <div>
+                <input
+                  type="text"
+                  value={newTag}
+                  onChange={handleNewTagChange}
+                  placeholder="Enter new Tag"
+                />
+                <button type="button" onClick={handleAddTag}>
+                  Add
+                </button>
+              </div>
+            )}
+          </div>
+
           <form onSubmit={handleUpdateOneProduct}>
             <label>
               Title:

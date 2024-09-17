@@ -8,7 +8,7 @@ export const createOneProduct = async (userId, formData) => {
     const res = await axios.post(`${url}${userId}/add-product`, formData);
     return res.data;
   } catch (error) {
-    throw new Error(`Read all products failed: ${error.message}`);
+    throw new Error(`Create one product failed: ${error.message}`);
   }
 };
 
@@ -74,6 +74,27 @@ export const deleteOneProduct = async (productId, product) => {
     throw new Error(`Failed to save changes: ${error.message}`);
   }
 };
+
+// export const getTags = async () => {
+//   try {
+//     const res = await axios.get(`${url}dashboard/api/tags`);
+//     return res.data.tags;
+//   } catch (error) {
+//     throw new Error(`Error fetching product tags: ${error.message}`);
+//   }
+// }
+
+// export const createNewTag = async (selectedCategory, newTag) => {
+//   try {
+//     const res = await axios.post(`${url}api/tags`, {
+//       category: selectedCategory,
+//       tag: newTag,
+//     });
+//     return res.data;
+//   } catch (error) {
+//     throw new Error(`Error creating new tag: ${error.message}`);
+//   }
+// };
 
 // Users
 export const createOneUser = async (formData) => {

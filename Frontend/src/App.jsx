@@ -1,8 +1,9 @@
 // eslint-disable-next-line no-unused-vars
-import React from "react";
+import React, { useState } from 'react';
 import { ReactNotifications } from "react-notifications-component";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import "./App.css";
+import SearchBar from "./components/SearchBar";
 import Navbar from "./components/Navbar";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -16,15 +17,22 @@ import AllProducts from "./pages/AllProducts";
 import Product from "./pages/Product";
 import ProductDetails from "./pages/ProductDetails";
 import UserDetails from "./pages/UserDetails";
+import { CategoriesProvider } from "./contexts/CategoriesContext";
+import { TagsProvider } from "./contexts/TagsContext";
 
 function App() {
+  const [productSuggestion, setProductSuggestion] = useState([]);
+
   return (
     <BrowserRouter>
+      <CategoriesProvider>
+        <TagsProvider>
       <ReactNotifications />
+      <SearchBar element={<SearchBar setProductSuggestion={setProductSuggestion} />}/>
       <Navbar />
       <Routes>
         <Route path="/" element={<Homepage />} />
-        <Route path="dashboard/:userId" element={<Dashboard />} />
+        <Route path="dashboard/:userId" element={<Dashboard productSuggestion={productSuggestion} />} />
         <Route path="register" element={<Register />} />
         <Route path="login" element={<Login />} />
         <Route
@@ -50,6 +58,8 @@ function App() {
         />
         {/* <Route path='*' element={<NoPage />} /> */}
       </Routes>
+      </TagsProvider>
+      </CategoriesProvider>
     </BrowserRouter>
   );
 }

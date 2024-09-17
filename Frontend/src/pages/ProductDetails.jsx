@@ -41,7 +41,8 @@ function ProductDetails() {
           <ul>
             <li key={product._id}>
                 {product.title} - {product.desc} - Expiration Date:{" "}
-                {new Date(product.exp_date).toLocaleDateString()}
+                {new Date(product.exp_date).toLocaleDateString()} - Category: {product.category}
+                - Tags: {product.tags}
                 <Link to={`/dashboard/products/edit/${product._id}`}>Edit</Link>
             </li>
           </ul>
